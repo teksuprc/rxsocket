@@ -20,7 +20,7 @@ var rxjs_test = (function() {
 
     function sendMessage() {
         var text = document.getElementById('inputTxt').value;
-        socket.emit('db-message', text);
+        socket.emit('client-message', text);
     };
 
     return {

@@ -1,0 +1,121 @@
+dynamodb notes
+
+data types:
+
+scalar
+	string
+	number
+	binary
+	boolean
+	null
+sets
+	string set
+	number set
+	binary set
+	
+	// sets cannot be mixed
+	// empty sets not supported
+	// ordering is not preserved
+	// each value must be unique
+	
+	
+Documents
+	List
+		ordered collection of values
+		can be mixed
+		just like JSON array
+	Map
+		key:value pairs
+		just like JSON object
+	
+Read/Write capacity
+	used to provide throughput
+	1wcu = 1kb of data/second (rounded up)
+		roundup(item size / 1kb)
+		
+	RCUs
+		strongly
+			1rcu = up to 4kb data/second
+			roundup(item size / 4kb)
+		eventually
+			1rcu = up to 8kb data/second
+			roundup(item size / 4kb) / 2
+		rounded up to 4 kb
+
+Partitions
+	table is divided into smaller parts
+	manageability, performance, availablility
+	vertical partitioning - table split by columns
+	horizontal - table split by rows (DynamoDB)
+	
+Consistency models
+	strongly
+		reads return latest results
+		consumes more RCUs
+		higher read latency
+		not default
+	eventually
+		may not return latest results
+		consumes 1/2 RCUs
+		lower read latency
+		default
+	
+
+Create Table
+	aws console
+		dynamodb
+			table name and primary key (partition key/hash key) and sort key (sorts table)
+
+	cloudformation
+		// define your infrastructure
+		resources: {
+			Messages: {
+				type: aws::dynamodb::table,
+				properties: {
+					tablename: Messages
+					....
+
+	aws sdk
+		function createTable() {
+			var params = {};
+			
+			var promise = docClient.createTable(params).promise();
+			return promise;
+		}
+	
+		function done() { console.log('all done'); }
+		
+		createTable()
+			.then(createOtherTable)
+			.catch(function(err) {
+			})
+			.then(done);
+
+List/Describe Tables
+	dynamodb.listTables(params).then( (table) => console.log('table', table) );
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

@@ -63,12 +63,12 @@ let createMessageTable = function() {
     var params = {
         TableName: "Messages",
         KeySchema: [
-            { AttributeName: "id", KeyType: "HASH" },
-            { AttributeName: "audience", KeyType: " RANGE" }
+            { AttributeName: "audience", KeyType: "HASH" },
+            { AttributeName: "id", KeyType: "RANGE" }
         ],
         AttributeDefinitions: [
-            { AttributeName: "id", AttributeType: "N" },
             { AttributeName: "audience", AttributeType: "S" },
+            { AttributeName: "id", AttributeType: "N" }
         ],
         ProvisionedThroughput: {
             ReadCapacityUnits: 5,
@@ -136,12 +136,14 @@ let scan = function(table, filter, attrName, attrValue) {
         ExpressionAttributeNames: attrName ? attrName : null,
         ExpressionAttributeValues: attrValue ? attrValue : null
     };
-    docClient.scan(params, function(err, data) {
+    return docClient.scan(params).promise; //, function(err, data) {
+    /*
         if (err)
             console.log('failed to scan table', JSON.stringify(err, null, 2));
         else
             console.log('scan complete', data.Items);
     });
+    */
 }
 
 let deleteAll = function() {

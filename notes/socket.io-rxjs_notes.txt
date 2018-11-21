@@ -1,0 +1,31 @@
+
+clients 				{--a---b----c----d-------|}
+
+// these are the same but separate observables
+stream from db 			{----1---2----3--4-5-----|}
+	client messages		{----1---2----3--4-5-----|}
+
+	client disconnect	{---------a---b---c--d---|}
+
+
+
+// client connections ('connect')
+			{--a---b----c--d-|}
+connections$ = fromEvent(io, 'connection');
+
+// connections now holds the list of connected (sockets/clients)
+
+
+// we subscribe to get client connections and add other event handlers
+connections$.subscribe( socket => {
+	console.log('client joined');
+	
+	// we need 2 observables
+	// 1) messages
+	// 2) disconnect events
+	// 		on disconnect events we need to remove the socket
+
+});
+
+
+2018-11-21T14:58:24.155z
