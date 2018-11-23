@@ -29,70 +29,32 @@ const config = {
 
 const dynamodb = new aws.DynamoDB(config);
 const docClient = new aws.DynamoDB.DocumentClient(config);
-const dynamodbTranslator = docClient.getTranslator();
-
-let ItemShape = docClient.service.api.operations.getItem.output.members.Item;
-//console.log('item shape:', JSON.stringify(ItemShape, null, 2));
-
-let dbSubject$ = new Subject();
-
-let getMessageByKey = function(id, audience) {
-    var params = { 
-        TableName: "Messages",
-        Key: { id: id, audience: audience }
-    };
-    docClient.get(params, function(err, data) {
-        if (err)
-            console.err('error failed to get data', id, audience, JSON.stringify(err, null, 2));
-        else {
-            console.log('get successful', id, audience, JSON.stringify(data, null, 2));
-            if(data && data.Item)
-                dbSubject$.next(data.Item);
-        }
-    });
-}
 
 let getCurrentMessagesForAudience = function(audience) {
-    var params = { 
+    var params = {
         TableName: 'Messages',
         KeyConditionExpression: '#a = :v',
-        ExpressionAttributeNames: { '#a': 'audience' },
-        ExpressionAttributeValues: { ':v': audience, }
+        FilterExpression: ':t > #sd AND :t < #ed',
+        ExpressionAttributeNames: {
+            '#a': 'audience',
+            '#sd': 'startDate',
+            '#ed': 'endDate',
+        },
+        ExpressionAttributeValues: {
+          ':v': audience,
+          ':t': new Date().toISOString()
+        }
     };
     return docClient.query(params).promise();
 }
-
-let getAllCurrentMessages = function() {
-    var params = { 
-        TableName: "Messages",
-        Key: { id: id, audience: audience }
-    };
-    docClient.get(params, function(err, data) {
-        if (err)
-            console.err('error failed to get data', id, audience, JSON.stringify(err, null, 2));
-        else {
-            console.log('get successful', id, audience, JSON.stringify(data, null, 2));
-            if(data && data.Item)
-                dbSubject$.next(data.Item);
-        }
-    });
-}
-
-module.exports.handler = function(event, context, callback) {
-    event.Records.forEach(function(record) {
-        record.dynamodb.OldImage = dynamodbTranslator.translateOutput(record.dynamodb.OldImage, ImageShape);
-        record.dynamodb.NewImage = dynamodbTranslator.translateOutput(record.dynamodb.NewImage, ImageShape);
-    });
-}
 //#endregion
-
 
 //#region RXJS IO Wrapper
 const io$ = of(io(http));
 
 const connection$ = io$.pipe(
     switchMap( io => fromEvent(io, 'connection').pipe(
-        map(client => ({io, client, dbSubject$}))
+        map(client => ({io, client}))
     ))
 );
 const disconnect$ = connection$.pipe(
@@ -103,7 +65,7 @@ const disconnect$ = connection$.pipe(
 
 connection$.subscribe( ({io, client}) => {
     console.log('client connected', client.id);
-    //io.emit('message',  new MessageRef('message', 'user joined'));
+    io.emit('message',  new MessageRef('message', 'user joined'));
 
     //==============================================================================================================
     // ClIENT Disconnect
@@ -116,39 +78,32 @@ connection$.subscribe( ({io, client}) => {
     //==============================================================================================================
     // subscribe to client-messages. client -> server
     // then re-emit the same message. server -> all clients
-    const clientMessages$ = fromEvent(client, 'client-message').pipe(takeUntil(disconnect$));
+    const adminMessages$ = fromEvent(client, 'admin-message').pipe(takeUntil(disconnect$));
 
-    clientMessages$.subscribe(clientMessage => {
-        console.log('clientMessage', clientMessage, 'client id', client.id);
+    adminMessages$.subscribe(adminMessage => {
+        console.log('admin-message', adminMessage, 'socket id', client.id);
         // do stuff with message
         // in this case we resend to all clients
         // TODO:
         //  1) validate the message - parse out all code or make trusted... based on our policy
         //  2) all business logic should go here to determine if a message should be broadcasted
-        io.emit('message', new MessageRef('message', clientMessage));
+        io.emit('message', new MessageRef('admin-message', adminMessage));
     });
 
     //==============================================================================================================
     // SERVER sent messages (from database where the current date is within the range of the startDate and endDate of the message)
     //==============================================================================================================
-    // the audience should come from somewhere... idk where yet though
 
+    // the audience should come from somewhere... idk where yet though
     let targetAudience = 'test1';
     getCurrentMessagesForAudience(targetAudience)
     .then(function(data) {
         if(data && data.Items) {
-            var today = new Date();
-            var results = data.Items.filter( m => {
-                var start = new Date('2018-11-20T14:58:24.155Z');
-                var end = new Date('2018-11-24T14:58:24.155Z');
-                return (today >= start && today <= end);
+            console.log(`query returned ${data.Items.length} results`);
+            // emit the database messages to all clients
+            data.Items.forEach(function(r) {
+                client.emit('message', new MessageRef('db-message', r.message));
             });
-            if(results) {
-                // emit the database messages to all clients
-                results.forEach(function(r) {
-                    io.emit('message', new MessageRef('db-message', r.message));
-                });
-            }
         }
     })
     .catch(function(err) {

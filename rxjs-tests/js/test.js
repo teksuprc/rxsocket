@@ -1,7 +1,7 @@
 var rxjs_test = (function() {
 'use strict';
 
-    let socket = io('http://localhost:4000');
+    var socket = io('http://localhost:4000');
                 
     socket.on('connect', function() {
         console.log('client connect');
@@ -18,13 +18,5 @@ var rxjs_test = (function() {
         console.log('client disconnect');
     });
 
-    function sendMessage() {
-        var text = document.getElementById('inputTxt').value;
-        socket.emit('client-message', text);
-    };
-
-    return {
-        sendMessage: sendMessage
-    };
 })();
 
