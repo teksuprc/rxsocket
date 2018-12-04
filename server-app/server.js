@@ -30,11 +30,34 @@ const config = {
 const dynamodb = new aws.DynamoDB(config);
 const docClient = new aws.DynamoDB.DocumentClient(config);
 
+let audienceKeys = ["test1", "test2", "test3"];
+
+let putMessageForAudience = function(row) {
+    let put_params = {
+        "TableName": "Messages",
+        "Item": {
+            "id": row.id,
+            "audience": row.audience,
+            "visibility": (row.visibility) ? row.visibility : "yes",
+            "startDate": row.startDate,
+            "endDate": row.endDate,
+            "message": row.message
+        }
+    };
+    docClient.put(put_params, function(err, data) {
+        if (err)
+            console.log('Error inserting data', JSON.stringify(err, null, 2));
+        else {
+            console.log('inserted', data);
+        }
+    });
+};
+
 let getCurrentMessagesForAudience = function(audience) {
     var params = {
         TableName: 'Messages',
         KeyConditionExpression: '#a = :v',
-        FilterExpression: ':t > #sd AND :t < #ed',
+        FilterExpression: ':t >= #sd and :t < #ed',
         ExpressionAttributeNames: {
             '#a': 'audience',
             '#sd': 'startDate',
@@ -87,7 +110,39 @@ connection$.subscribe( ({io, client}) => {
         // TODO:
         //  1) validate the message - parse out all code or make trusted... based on our policy
         //  2) all business logic should go here to determine if a message should be broadcasted
-        io.emit('message', new MessageRef('admin-message', adminMessage));
+        //  3) save the admin message into the database so new clients can get the message
+
+        // save to the database
+        let newDate = new Date();
+        let dateString = newDate.toISOString();
+        let endDate = new Date();
+        endDate.setDate(newDate.getDate() + 1);
+        let newDBMessage = {
+            "id": newDate.getTime(),
+            "audience": null,
+            "visibility": "yes",
+            "startDate": dateString,
+            "endDate": endDate.toISOString(),
+            "message": adminMessage
+        };
+
+        audienceKeys.forEach(function(key) {
+            try {
+                if(key) {
+                    newDBMessage.audience = key;
+                    console.log('db message', JSON.stringify(newDBMessage, null, 2));
+                    putMessageForAudience(newDBMessage);
+                }
+            }
+            catch(err) {
+                console.log('caught error', JSON.stringify(err, null, 2));
+            }
+        });
+
+        let newMessage = new MessageRef('admin-message', newDBMessage.message);
+
+        // broadcast the message
+        io.emit('message', newMessage);
     });
 
     //==============================================================================================================

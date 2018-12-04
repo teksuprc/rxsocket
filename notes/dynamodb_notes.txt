@@ -96,10 +96,48 @@ List/Describe Tables
 	
 	
 	
+Local Secondary Index
+	Same partition key, diffferent sort key
+	**** MAX of 5 LSI's per table ****
+	LSI's can ONLY be created on table creation (dumb)
 	
+	"LocalSecondaryIndexes": [{
+		"IndexName": "startDateIndex",
+		"KeySchema": [
+			{
+				"AttributeName": "Primary Key",
+				"KeyType": "HASH"
+			},
+			{
+				"AttributeName": "startDate",
+				"KeyType": "RANGE"
+			}
+		],
+		"Projection": {
+			"NonKeyAttributes": [],
+			"ProjectionType" : "ALL"
+		}
+	}]
 	
-	
-	
+	** Query **
+	var params = {
+		"TableName": "Messages",
+		"IndexName": "startDateIndex",
+		"KeyConditionExpression": "#a = :v AND #sd >= :sd",
+		"ExpressionAttributeNames": {
+			"#a": "audience",
+			"#sd": "startDate"
+		},
+		"ExpressionAttributeValues": {
+			":v": "test1",
+			":sd": new Date().toISOString()
+		},
+		"ScanIndexForward": false,
+		"ReturnConsumedCapacity": "TOTAL"
+	};
+	docClient.query(params).promise()
+		.then(... do stuff)
+		.catch(... throw err);
 	
 	
 	

@@ -73,7 +73,32 @@ let createMessageTable = function() {
         ProvisionedThroughput: {
             ReadCapacityUnits: 5,
             WriteCapacityUnits: 5
-        }
+        },
+// NOTE: Local Indexes will NOT work for date ranges. This is due to how DynamoDB is structured. 
+// FilterExpression is the answer... which is cpu intensive and does not save on RCU's.
+/*        
+        LocalSecondaryIndexes: [{
+            IndexName: "startDateIndex",
+            KeySchema: [
+                { AttributeName: "audience", KeyType: "HASH" },
+                { AttributeName: "startDate", KeyType: "RANGE" }
+            ],
+            Projection: {
+                NonKeyAttributes: [],
+                ProjectionType : "ALL"
+            }
+        },{
+            IndexName: "endDateIndex",
+            KeySchema: [
+                { AttributeName: "audience", KeyType: "HASH" },
+                { AttributeName: "endDate", KeyType: "RANGE" }
+            ],
+            Projection: {
+                NonKeyAttributes: [],
+                ProjectionType : "ALL"
+            }
+        }]
+*/
     };
 
     dynamo.createTable(params, function(err, data) {
@@ -93,7 +118,7 @@ let loadSampleData = function() {
             "Item": {
                 "id": row.id,
                 "audience": row.audience,
-                "visibility": "UT",
+                "visibility": "yes",
                 "startDate": new Date().toISOString(),
                 "endDate": new Date().toISOString(),
                 "message": row.message
@@ -109,7 +134,28 @@ let loadSampleData = function() {
     });
 }
 
-let get = function(id, audience) {
+let putItem = function(audience) {
+    var put_params = {
+        "TableName": "Messages",
+        "Item": {
+            "id": new Date().toISOString(),
+            "audience": row.audience,
+            "visibility": "yes",
+            "startDate": new Date().toISOString(),
+            "endDate": new Date().toISOString(),
+            "message": row.message
+        }
+    };
+    docClient.put(put_params, function(err, data) {
+        if (err)
+            console.log('Error inserting data', JSON.stringify(err, null, 2));
+        else {
+            console.log('inserted', data);
+        }
+    });
+};
+
+let getItem = function(id, audience) {
     var params = { 
         TableName: "Messages",
         Key: {
