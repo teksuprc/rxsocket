@@ -2,23 +2,42 @@
 <html lang="en-us">
     <head>
         <meta charset="utf-8">
-        <title>RXJS Tests</title>
+        <title>RXJS Tests - Admin Page</title>
 
-        <script src="vendor/socket-io-client/2.1.1/socket.io.js"></script>
-        <script src="vendor/rxjs/6.3.3-umd/rxjs.umd.min.js"></script>
+        <script src="https://localhost:4433/vendor/socket-io-client/2.1.1/socket.io.js"></script>
+        <script src="https://localhost:4433/vendor/rxjs/6.3.3-umd/rxjs.umd.min.js"></script>
 
     </head>
     <body>
         <div>
-            <p>This is where it all begins<p>
-            <ul id="messages" style="list-style-type: none; border: 1px solid #777; width: 640px; height: 420px; overflow-y: scroll;">
+            <p>Administrator's Page<p>
+            <input id="nickname" type="text" placeholder="nickname" style="width: 110px;" required/>
+            <select id="appId" style="width:80px;" multiple required>
+                <option value="test1">Test 1</option>
+                <option value="test2">Test 2</option>
+                <option value="test3">Test 3</option>
+                <option value="global">Global</option>
+            </select>
+            <button id="btnConnect" type="button" onclick="adminClient.join()">Connect</button>
+            <button id="btnDisconnect" type="button" onclick="adminClient.disconnect()">Disconnect</button>
+            <button id="btnDisconnect" type="button" onclick="adminClient.getClients()">Get Client List</button>
+            <br/>
+            <br/>
+            <div id="messageInput">
+                <input id="inputTxt" type="text" style="width: 500px;">
+                <button type="button" onclick="adminClient.sendMessage()">Send Message</button>    
+            </div>
+            <hr/>
 
-            </ul>
+            <div>
+                <div style="display: inline-block; padding: 4px;">
+                    <ul id="clients" style=" padding: 4px; list-style-type: none; width: 300px; height: 720px; border: 1px solid #777; overflow-y: auto;"></ul>
+                </div>
+                <div style="display: inline-block; padding: 4px;">
+                    <ul id="messages" style=" padding: 4px; list-style-type: none; border: 1px solid #777; width: 640px; height: 720px; overflow-y: auto;"></ul>
+                </div>
+            </div>
         </div>
-        <br/>
-        <input id="inputTxt" type="text" style="width: 300px;">
-        <button type="button" onclick="rxjs_test.sendAdminMessage()">Send Message</button>
-
         <script src="js/admin.js"></script>
     </body>
 </html>
